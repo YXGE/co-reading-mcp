@@ -403,6 +403,14 @@ const httpNote = await fetchJson("/api/annotations", {
     note: "HTTP reader note.",
   },
 });
+const httpReply = await fetchJson("/api/replies", {
+  method: "POST",
+  body: {
+    parentId: httpNote.id,
+    note: "HTTP reader reply.",
+    author: "user",
+  },
+});
 const httpImport = await fetchJson("/api/import", {
   method: "POST",
   body: {
@@ -583,6 +591,9 @@ if (!httpChunk.text.includes("Claude and the mission of Anthropic")) {
 }
 if (!httpNote.id) {
   throw new Error("HTTP API did not create a user note");
+}
+if (httpReply.parentId !== httpNote.id || httpReply.kind !== "reply") {
+  throw new Error("HTTP API did not attach a reply");
 }
 if (httpImport.bookId !== "http-import" || httpImport.chunkCount !== 2) {
   throw new Error("HTTP API did not import a book");

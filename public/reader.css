@@ -179,6 +179,11 @@ h2 {
   border-radius: 5px;
   background: var(--accent-soft);
   color: inherit;
+  cursor: pointer;
+}
+
+.text mark.active {
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .empty {
@@ -201,6 +206,11 @@ h2 {
   border-color: var(--accent-soft);
 }
 
+.note-card.active {
+  border-color: var(--accent);
+  background: var(--panel-strong);
+}
+
 .note-quote {
   margin: 0 0 10px;
   padding-left: 10px;
@@ -219,6 +229,36 @@ h2 {
   margin-top: 10px;
   color: var(--muted);
   font-size: 13px;
+}
+
+.thread {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.reply {
+  padding: 10px 12px;
+  border-left: 3px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.035);
+}
+
+.reply.user {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.reply-body {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.reply-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
 }
 
 .note-form,
@@ -264,6 +304,12 @@ textarea {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.submit-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .form-actions {
@@ -323,12 +369,26 @@ button:disabled {
 
   .reader {
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .note-form,
   .submitbar {
     left: 16px;
     right: 16px;
+  }
+
+  .submitbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .submit-actions {
+    justify-content: flex-end;
+  }
+
+  .margins {
+    overflow: visible;
   }
 }
 
@@ -352,5 +412,9 @@ button:disabled {
   .submitbar {
     border-color: rgba(255, 255, 255, 0.14);
     background: rgba(28, 27, 26, 0.78);
+  }
+
+  .reply {
+    background: rgba(255, 255, 255, 0.07);
   }
 }

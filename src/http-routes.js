@@ -9,6 +9,7 @@ import {
   listChunks,
   markRead,
   readChunk,
+  replyToAnnotation,
   searchChunks,
   submitUserNotes,
 } from "./store.js";
@@ -97,6 +98,19 @@ export async function handleApi(req, res, url, options = {}) {
         ...body,
         author: body.author || "user",
         status: body.status || "open",
+      }),
+    );
+  }
+
+  if (req.method === "POST" && parts.length === 2 && parts[1] === "replies") {
+    const body = await readBody(req, { maxBytes });
+    return sendJson(
+      res,
+      201,
+      await replyToAnnotation({
+        ...body,
+        author: body.author || "user",
+        kind: body.kind || "reply",
       }),
     );
   }
