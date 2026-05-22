@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -333,6 +334,83 @@ const httpNote = await fetchJson("/api/annotations", {
 });
 const readerHtml = await fetch(`http://127.0.0.1:${httpPort}/`);
 httpServer.kill();
+const ssePort = httpPort + 1;
+const sseServer = spawn(process.execPath, [path.join(root, "src/server-sse.js")], {
+  env: {
+    ...process.env,
+    READING_MCP_DATA_DIR: tempDataDir,
+    MCP_SSE_PORT: String(ssePort),
+    MCP_AUTH_TOKEN: "smoke-token",
+  },
+  stdio: ["ignore", "ignore", "pipe"],
+});
+
+function openSse() {
+  return new Promise((resolve, reject) => {
+    const req = http.get(
+      {
+        hostname: "127.0.0.1",
+        port: ssePort,
+        path: "/sse",
+        headers: { Authorization: "Bearer smoke-token" },
+      },
+      (res) => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`SSE returned ${res.statusCode}`));
+          res.resume();
+          return;
+        }
+        resolve({ req, res });
+      },
+    );
+    req.on("error", reject);
+  });
+}
+
+let sse = null;
+for (let attempt = 0; attempt < 30; attempt += 1) {
+  try {
+    sse = await openSse();
+    break;
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+if (!sse) throw new Error("SSE server did not start");
+
+let sseBuffer = "";
+const sseEvents = [];
+sse.res.setEncoding("utf8");
+sse.res.on("data", (chunk) => {
+  sseBuffer += chunk;
+  const events = sseBuffer.split("\n\n");
+  sseBuffer = events.pop() || "";
+  for (const event of events) {
+    const type = event.match(/^event: (.+)$/m)?.[1];
+    const data = event.match(/^data: (.+)$/m)?.[1];
+    if (type && data) sseEvents.push({ type, data });
+  }
+});
+
+async function waitForSseEvent(type) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const index = sseEvents.findIndex((event) => event.type === type);
+    if (index >= 0) return sseEvents.splice(index, 1)[0];
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error(`Timed out waiting for SSE event: ${type}`);
+}
+
+const endpointEvent = await waitForSseEvent("endpoint");
+const endpoint = new URL(endpointEvent.data);
+const ssePost = await fetch(`http://127.0.0.1:${ssePort}${endpoint.pathname}${endpoint.search}`, {
+  method: "POST",
+  headers: { "content-type": "application/json", Authorization: "Bearer smoke-token" },
+  body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize" }),
+});
+const sseMessage = JSON.parse((await waitForSseEvent("message")).data);
+sse.req.destroy();
+sseServer.kill();
 await rm(tempDataDir, { recursive: true, force: true });
 
 if (!list.result?.content?.[0]?.text.includes("demo-book")) {
@@ -397,6 +475,12 @@ if (!httpNote.id) {
 }
 if (!readerHtml.ok || !(await readerHtml.text()).includes("Co-Reading")) {
   throw new Error("HTTP reader did not serve the web UI");
+}
+if (ssePost.status !== 202) {
+  throw new Error("SSE message endpoint did not accept JSON-RPC");
+}
+if (sseMessage.result?.serverInfo?.name !== "co-reading-mcp") {
+  throw new Error("SSE transport did not return MCP initialize response");
 }
 
 console.log("smoke ok");

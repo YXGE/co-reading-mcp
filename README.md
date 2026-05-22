@@ -64,6 +64,30 @@ For Claude Desktop / Claude Code, configure the MCP server as a stdio command:
 }
 ```
 
+## Remote SSE Transport
+
+For VPS, reverse-proxy, tunnel, or remote MCP clients that support SSE transport, run:
+
+```bash
+READING_MCP_DATA_DIR=./data MCP_AUTH_TOKEN="change-me" npm run start:sse
+```
+
+The SSE endpoint is:
+
+```text
+https://your-domain.example/sse
+```
+
+Environment variables:
+
+- `MCP_SSE_PORT` or `PORT`: listen port, default `3100`
+- `MCP_SSE_HOST`: listen host, default `0.0.0.0`
+- `MCP_AUTH_TOKEN`: bearer token required by remote clients
+- `MCP_CORS_ORIGIN`: CORS origin, default `*`
+- `MCP_MAX_BODY_BYTES`: max JSON-RPC POST body size, default `1000000`
+
+Do not expose the SSE server on the public internet without HTTPS and `MCP_AUTH_TOKEN`. If you use nginx, Caddy, or cloudflared, proxy `/sse` and `/messages` to the same local process and make sure streaming responses are not buffered.
+
 ## Import Books
 
 Plain text:
