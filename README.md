@@ -82,7 +82,7 @@ READING_MCP_DATA_DIR=./data MCP_AUTH_TOKEN="change-me" npm run start:sse
 The same port serves the human reader, REST API, and remote MCP transports:
 
 - `https://your-domain.example/`: reference reader UI
-- `https://your-domain.example/?token=change-me`: reader UI with auth saved in local storage and a cookie
+- `https://your-domain.example/?token=change-me`: reader UI with auth saved in a cookie (convenience shortcut — the token appears in the first request URL; avoid on shared devices or high-security setups)
 - `https://your-domain.example/api/*`: reader REST API
 - `https://your-domain.example/mcp`: remote MCP JSON-RPC endpoint for custom connectors
 - `https://your-domain.example/sse`: legacy MCP SSE transport
@@ -93,7 +93,7 @@ Environment variables:
 - `MCP_SSE_PORT` or `PORT`: listen port, default `3100`
 - `MCP_SSE_HOST`: listen host, default `0.0.0.0`
 - `MCP_AUTH_TOKEN`: bearer token required by remote clients
-- `MCP_CORS_ORIGIN`: CORS origin, default `*`
+- `MCP_CORS_ORIGIN`: CORS origin. When `MCP_AUTH_TOKEN` is set, defaults to `*`; when unset, defaults to no CORS headers (blocks cross-origin requests)
 - `MCP_MAX_BODY_BYTES`: max JSON-RPC POST body size, default `25000000`
 - `READING_IMPORT_MAX_BYTES`: max EPUB/TXT upload size, default `25000000`
 
