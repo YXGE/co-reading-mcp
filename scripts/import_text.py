@@ -9,7 +9,23 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
+def detect_encoding(file_path: Path) -> str:
+    """自动检测文件编码。
+    
+    尝试多种常见编码，返回第一个成功解码的编码。
+    """
+    encodings = ['utf-8', 'utf-8-sig', 'gbk', 'gb2312', 'big5', 'utf-16', 'latin-1', 'cp1252']
+    
+    for encoding in encodings:
+        try:
+            with open(file_path, 'rb') as f:
+                f.read().decode(encoding)
+            return encoding
+        except (UnicodeDecodeError, LookupError):
+            continue
+    
+    # 如果都失败，默认使用 utf-8（会忽略错误）
+    return 'utf-8'
 
 def slugify(value: str) -> str:
     value = value.strip().lower()
@@ -212,7 +228,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    text = args.input.read_text(encoding="utf-8")
+    # 自动检测文件编码
+    detected_encoding = detect_encoding(args.input)
+    text = args.input.read_text(encoding=detected_encoding)
     if args.heading_regex:
         sections = sections_from_heading_regex(text, args.heading_regex, args.min_section_chars)
         if sections:
